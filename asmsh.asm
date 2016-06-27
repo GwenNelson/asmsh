@@ -9,6 +9,7 @@ extern _gethostname
 extern _system
 extern _fork
 extern _execve
+extern _chdir
 extern environ
 
 section .data
@@ -93,6 +94,12 @@ quit:
 	call _exit
 	pop rbp
 handle_cd:
+	mov r12,3
+	add r12,r14
+	mov rdi,r12
+	push rbp
+	call _chdir
+	pop rbp
 	jmp freecmdline
 
 split_line:
