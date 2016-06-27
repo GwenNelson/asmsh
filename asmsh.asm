@@ -17,8 +17,8 @@ section .data
 	INLINE_STR: dd 0
 	HOSTNAME_STR: times 50 db 0
 	
-	QUIT_CMD_STR: db "quit",10,0
-	
+	QUIT_CMD_STR: db "quit",0
+	EXIT_CMD_STR: db "exit",0
 
 section .text
 	global _main
@@ -27,25 +27,39 @@ _main:
 
 sh_loop:
 	call unix_prompt
-
+	
 	push rbp
 	mov rdi,PROMPT_STR
 	call _readline
 	pop rbp
 	
 	mov  r14,rax
-
+	
 	mov rdi,r14
 	mov rsi,QUIT_CMD_STR
 	mov rdx,4
 	push rbp
 	call _strncmp
 	pop rbp
-
+	
 	mov r15,rax
 	cmp r15,0
 	je freecmdline
+	
+	mov rdi,r14
+	mov rsi,EXIT_CMD_STR
+	mov rdx,4
+	push rbp
+	call _strncmp
+	pop rbp
 		
+	mov r15,rax
+	cmp r15,0
+	je freecmdline
+	
+	mov rdi,r14
+	call split_line
+	
 	push rbp
 	mov rdi,r14
 	call _system
@@ -59,6 +73,7 @@ freecmdline:
 
 	cmp r15,0
 	jne sh_loop
+	je quit
 quit:
 	push rbp
 	mov rdi,0
@@ -66,6 +81,8 @@ quit:
 	call _exit
 	pop rbp
 
+split_line:
+	ret
 unix_prompt:
 	mov rdi,0
 	call _getlogin
