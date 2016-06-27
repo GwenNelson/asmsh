@@ -19,6 +19,7 @@ section .data
 	
 	QUIT_CMD_STR: db "quit",0
 	EXIT_CMD_STR: db "exit",0
+	CD_CMD_STR: db "cd ",0
 
 section .text
 	global _main
@@ -56,6 +57,17 @@ sh_loop:
 	mov r15,rax
 	cmp r15,0
 	je freecmdline
+
+	mov rdi,r14
+	mov rsi,CD_CMD_STR
+	mov rdx,3
+	push rbp
+	call _strncmp
+	pop rbp
+	
+	mov r13,rax
+	cmp r13,0
+	je handle_cd
 	
 	mov rdi,r14
 	call split_line
@@ -80,6 +92,8 @@ quit:
 	mov rax,0
 	call _exit
 	pop rbp
+handle_cd:
+	jmp freecmdline
 
 split_line:
 	ret
