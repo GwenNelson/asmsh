@@ -10,11 +10,12 @@ extern _system
 extern _fork
 extern _execve
 extern _chdir
+extern _snprintf
 extern environ
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
-	PROMPT_STR: db "",0
+	PROMPT_STR: times 4096 db 0
 	INLINE_STR: dd 0
 	HOSTNAME_STR: times 50 db 0
 	
@@ -118,11 +119,13 @@ unix_prompt:
 	call _getcwd
 	mov r14,rax
 	
-	mov rdi,UNIX_PROMPT
-	mov rsi,r12
-	mov rdx,r13
-	mov rcx,r14
-	call _printf
+	mov rdi,PROMPT_STR
+	mov rsi,4096
+	mov rdx,UNIX_PROMPT
+	mov rcx,r12
+	mov r8,r13
+	mov r9,r14
+	call _snprintf
 	mov rdi,r14
 	call _free
 
