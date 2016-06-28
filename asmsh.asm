@@ -15,12 +15,13 @@ extern _snprintf
 extern _strtok
 extern _memset
 extern _waitpid
-extern environ
+extern _perror
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
 	ZERO_STR: db 10,0
 	STRTOK_SEP_STR: db " ",0
+	ERR_EXEC_STR: db "Error executing command",0
 	
 	QUIT_CMD_STR: db "quit",0
 	EXIT_CMD_STR: db "exit",0
@@ -116,8 +117,10 @@ spawn_cmd:
 	mov rsi,ARGS
 	mov rdx,0
 	call _execvp
-	pop rbp
-	jmp quit
+	; if we get to here, something went wrong with the _execvp call
+	mov rdi,ERR_EXEC_STR
+	call _perror
+	jmp quit ; we are still in the fork() child, so die
 
 freecmdline:	
 	push rbp
@@ -156,7 +159,7 @@ split_line:
 
 	mov rdi,ARGS ; clear ARGS
 	mov rsi,0
-	mov rdx,128
+	mov rdx,128  ; 64 64-bit pointers comes to 128 bytes
 	call _memset
 
 	mov rdi, r13
