@@ -152,11 +152,19 @@ handle_cd:
 
 split_line:
 	;rdi register set by caller
+	mov r13, rdi ; save rdi
+
+	mov rdi,ARGS ; clear ARGS
+	mov rsi,0
+	mov rdx,128
+	call _memset
+
+	mov rdi, r13
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
 	mov [EXEC_CMD],rax
 
-	;mov [ARGS],rax
+	; store argv[0]
 	mov r13,ARGS
 	add r13,0
 	mov [r13], rax
@@ -168,9 +176,11 @@ split_line_loop:
 	cmp rax, 0
 
 	je split_line_done ; if strtok returns NULL, we're done
-	mov r13,ARGS
+
+	mov r13,ARGS       ; increment the index into ARGS and store the param
 	add r13,8
 	mov [r13], rax
+
 	jne split_line_loop
 
 split_line_done:
