@@ -9,17 +9,17 @@ extern _getlogin
 extern _gethostname
 extern _system
 extern _fork
-extern _execve
+extern _execvp
 extern _chdir
 extern _snprintf
 extern _strtok
 extern _memset
+extern _waitpid
 extern environ
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
 	PROMPT_STR: times 4096 db 0
-	INLINE_STR: dd 0
 	HOSTNAME_STR: times 50 db 0
 	EXEC_CMD: dd 0
 	EXEC_ARGC: dd 0
@@ -31,6 +31,7 @@ section .data
 	QUIT_CMD_STR: db "quit",0
 	EXIT_CMD_STR: db "exit",0
 	CD_CMD_STR: db "cd ",0
+	CHILD_PID: dw 0
 
 section .text
 	global _main
@@ -84,8 +85,25 @@ sh_loop:
 	call split_line
 	
 	push rbp
+	call _fork
+	pop rbp
+	cmp rax,0
+	je spawn_cmd
+	push rbp
+	mov rdi,rax  ; we're the parent, setup waitpid
+	mov rsi,0
+	mov rdx,0
+	call _waitpid
+	pop rbp
+	mov r15,1
+	jmp freecmdline
+
+spawn_cmd:
+	push rbp
 	mov rdi,[EXEC_CMD]
-	call _system
+	mov rsi,0
+	mov rdx,0
+	call _execvp
 	pop rbp
 
 freecmdline:	
