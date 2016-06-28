@@ -22,9 +22,8 @@ section .data
 	PROMPT_STR: times 4096 db 0
 	HOSTNAME_STR: times 50 db 0
 	EXEC_CMD: dd 0
-	EXEC_ARGC: dd 0
-	EXEC_ARGV: times 10 dd 0
-	.len: equ $ - EXEC_ARGV
+
+	ZERO_STR: db 10,0	
 	
 	STRTOK_SEP_STR: db " ",0
 	
@@ -40,6 +39,9 @@ _main:
 
 sh_loop:
 	call unix_prompt
+	mov r14,1
+	mov r15,1
+	mov rax,1
 	
 	push rbp
 	mov rdi,PROMPT_STR
@@ -47,6 +49,15 @@ sh_loop:
 	pop rbp
 	
 	mov  r14,rax
+
+	mov rdi,r14
+	mov rsi,ZERO_STR
+	mov rdx,1
+	push rbp
+	call _strncmp
+	pop rbp	
+	cmp rax,0
+	je sh_loop
 	
 	mov rdi,r14
 	mov rsi,QUIT_CMD_STR
@@ -57,7 +68,7 @@ sh_loop:
 	
 	mov r15,rax
 	cmp r15,0
-	je freecmdline
+	je quit
 	
 	mov rdi,r14
 	mov rsi,EXIT_CMD_STR
@@ -68,7 +79,7 @@ sh_loop:
 		
 	mov r15,rax
 	cmp r15,0
-	je freecmdline
+	je quit
 
 	mov rdi,r14
 	mov rsi,CD_CMD_STR
@@ -89,10 +100,10 @@ sh_loop:
 	pop rbp
 	cmp rax,0
 	je spawn_cmd
-	push rbp
 	mov rdi,rax  ; we're the parent, setup waitpid
 	mov rsi,0
 	mov rdx,0
+	push rbp
 	call _waitpid
 	pop rbp
 	mov r15,1
@@ -105,6 +116,7 @@ spawn_cmd:
 	mov rdx,0
 	call _execvp
 	pop rbp
+	jmp quit
 
 freecmdline:	
 	push rbp
@@ -141,41 +153,15 @@ split_line:
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
 	mov [EXEC_CMD], rax ; store the command
-	mov r8, 0
-	mov [EXEC_ARGC], r8 ; set argc to 0 so we can index the array
-
-	; zero out the EXEC_ARGV array from last time
-	mov rdi,EXEC_ARGV
-	mov rsi,0
-	mov rdx,EXEC_ARGV.len
-	call _memset
-	
-	mov r15, EXEC_ARGV ; store pointer to argv[0]
-
-	; set argv[0]
-	mov rdi, EXEC_CMD
-	mov [EXEC_ARGV], rdi
-	jmp split_line_done
 
 split_line_loop:
 	mov rdi, 0                ; invoke strtok() again to get command params
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
-	mov r14, rax
 
 	cmp rax, 0
 	je split_line_done ; if strtok returns NULL, we're done
-
-	mov r8, EXEC_ARGC
-	inc r8
-	mov [EXEC_ARGC],r8
-
-	inc rbx
-	mov rax,0
-	add [EXEC_ARGV],rbp
-	mov [EXEC_ARGV],r14
-	inc rbp
-	jmp split_line_loop
+	jne split_line_loop
 
 split_line_done:
 	mov rax,0
