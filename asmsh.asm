@@ -16,6 +16,8 @@ extern _strtok
 extern _memset
 extern _waitpid
 extern _perror
+extern _using_history
+extern _add_history
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
@@ -38,6 +40,9 @@ section .text
 	global _main
 
 _main:
+	push rbp
+	call _using_history
+	pop rbp
 
 sh_loop:
 	call unix_prompt
@@ -51,6 +56,11 @@ sh_loop:
 	pop rbp
 	
 	mov  r14,rax
+
+	mov rdi,r14
+	push rbp
+	call _add_history
+	pop rbp
 
 	mov rdi,r14
 	mov rsi,ZERO_STR
