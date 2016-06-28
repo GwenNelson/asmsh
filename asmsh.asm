@@ -4,6 +4,7 @@ extern _exit
 extern _readline
 extern _free
 extern _strncmp
+extern _strcmp
 extern _getcwd
 extern _getlogin
 extern _gethostname
@@ -18,6 +19,8 @@ extern _waitpid
 extern _perror
 extern _using_history
 extern _add_history
+extern _read_history
+extern _write_history
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
@@ -27,6 +30,7 @@ section .data
 	
 	QUIT_CMD_STR: db "quit",0
 	EXIT_CMD_STR: db "exit",0
+	HISTORY_CMD_STR: db "history",0
 	CD_CMD_STR: db "cd ",0
 
 
@@ -42,6 +46,11 @@ section .text
 _main:
 	push rbp
 	call _using_history
+	pop rbp
+	
+	mov rdi,0
+	push rbp
+	call _read_history
 	pop rbp
 
 sh_loop:
@@ -73,9 +82,8 @@ sh_loop:
 	
 	mov rdi,r14
 	mov rsi,QUIT_CMD_STR
-	mov rdx,4
 	push rbp
-	call _strncmp
+	call _strcmp
 	pop rbp
 	
 	mov r15,rax
@@ -84,9 +92,8 @@ sh_loop:
 	
 	mov rdi,r14
 	mov rsi,EXIT_CMD_STR
-	mov rdx,4
 	push rbp
-	call _strncmp
+	call _strcmp
 	pop rbp
 		
 	mov r15,rax
@@ -143,11 +150,17 @@ freecmdline:
 	je quit
 
 quit:
+	mov rdi,0
+	push rbp
+	call _write_history
+	pop rbp
+
 	push rbp
 	mov rdi,0
 	mov rax,0
 	call _exit
 	pop rbp
+
 
 handle_cd:
 	mov r12,3
