@@ -19,18 +19,19 @@ extern environ
 
 section .data
 	UNIX_PROMPT: db "%s@%s:%s$ ",0
-	PROMPT_STR: times 4096 db 0
-	HOSTNAME_STR: times 50 db 0
-	EXEC_CMD: dd 0
-
-	ZERO_STR: db 10,0	
-	
+	ZERO_STR: db 10,0
 	STRTOK_SEP_STR: db " ",0
 	
 	QUIT_CMD_STR: db "quit",0
 	EXIT_CMD_STR: db "exit",0
 	CD_CMD_STR: db "cd ",0
-	CHILD_PID: dw 0
+
+
+	PROMPT_STR: times 4096 db 0
+	HOSTNAME_STR: times 50 db 0
+	EXEC_CMD: times 2 dd 0
+
+	ARGS: times 64 dd 0
 
 section .text
 	global _main
@@ -94,7 +95,7 @@ sh_loop:
 	
 	mov rdi,r14
 	call split_line
-	
+aftersplit:	
 	push rbp
 	call _fork
 	pop rbp
@@ -112,7 +113,7 @@ sh_loop:
 spawn_cmd:
 	push rbp
 	mov rdi,[EXEC_CMD]
-	mov rsi,0
+	mov rsi,ARGS
 	mov rdx,0
 	call _execvp
 	pop rbp
@@ -144,6 +145,7 @@ handle_cd:
 	call _strtok ; cheap way to right trim whitespace
 	pop rbp
 	push rbp
+	mov rdi, rax
 	call _chdir
 	pop rbp
 	jmp freecmdline
@@ -152,19 +154,28 @@ split_line:
 	;rdi register set by caller
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
-	mov [EXEC_CMD], rax ; store the command
+	mov [EXEC_CMD],rax
+
+	;mov [ARGS],rax
+	mov r13,ARGS
+	add r13,0
+	mov [r13], rax
 
 split_line_loop:
 	mov rdi, 0                ; invoke strtok() again to get command params
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
-
 	cmp rax, 0
+
 	je split_line_done ; if strtok returns NULL, we're done
+	mov r13,ARGS
+	add r13,8
+	mov [r13], rax
 	jne split_line_loop
 
 split_line_done:
 	mov rax,0
+totally:
 	ret
 
 unix_prompt:
