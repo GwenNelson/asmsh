@@ -48,7 +48,7 @@ _main:
 	call _using_history
 	pop rbp
 	
-	mov rdi,0
+	xor rdi,rdi
 	push rbp
 	call _read_history
 	pop rbp
@@ -77,7 +77,7 @@ sh_loop:
 	push rbp
 	call _strncmp
 	pop rbp	
-	cmp rax,0
+	test rax,rax
 	je sh_loop
 	
 	mov rdi,r14
@@ -87,7 +87,7 @@ sh_loop:
 	pop rbp
 	
 	mov r15,rax
-	cmp r15,0
+	test r15,r15
 	je quit
 	
 	mov rdi,r14
@@ -97,7 +97,7 @@ sh_loop:
 	pop rbp
 		
 	mov r15,rax
-	cmp r15,0
+	test r15,r15
 	je quit
 
 	mov rdi,r14
@@ -108,7 +108,7 @@ sh_loop:
 	pop rbp
 	
 	mov r13,rax
-	cmp r13,0
+	test r13,r13
 	je handle_cd
 	
 	mov rdi,r14
@@ -117,11 +117,11 @@ aftersplit:
 	push rbp
 	call _fork
 	pop rbp
-	cmp rax,0
+	test rax,rax
 	je spawn_cmd
 	mov rdi,rax  ; we're the parent, setup waitpid
-	mov rsi,0
-	mov rdx,0
+	xor rsi,rsi
+	xor rdx,rdx
 	push rbp
 	call _waitpid
 	pop rbp
@@ -132,7 +132,7 @@ spawn_cmd:
 	push rbp
 	mov rdi,[EXEC_CMD]
 	mov rsi,ARGS
-	mov rdx,0
+	xor rdx,rdx
 	call _execvp
 	; if we get to here, something went wrong with the _execvp call
 	mov rdi,ERR_EXEC_STR
@@ -145,19 +145,19 @@ freecmdline:
 	call _free
 	pop rbp
 
-	cmp r15,0
+	test r15,r15
 	jne sh_loop
 	je quit
 
 quit:
-	mov rdi,0
+	xor rdi,rdi
 	push rbp
 	call _write_history
 	pop rbp
 
 	push rbp
-	mov rdi,0
-	mov rax,0
+	xor rdi,rdi
+	xor rax,rax
 	call _exit
 	pop rbp
 
@@ -181,7 +181,7 @@ split_line:
 	mov r13, rdi ; save rdi
 
 	mov rdi,ARGS ; clear ARGS
-	mov rsi,0
+	xor rsi,rsi
 	mov rdx,128  ; 64 64-bit pointers comes to 128 bytes
 	call _memset
 
@@ -192,14 +192,13 @@ split_line:
 
 	; store argv[0]
 	mov r13,ARGS
-	add r13,0
 	mov [r13], rax
 
 split_line_loop:
-	mov rdi, 0                ; invoke strtok() again to get command params
+	xor rdi, rdi                ; invoke strtok() again to get command params
 	mov rsi, STRTOK_SEP_STR
 	call _strtok
-	cmp rax, 0
+	test rax, rax
 
 	je split_line_done ; if strtok returns NULL, we're done
 
@@ -210,12 +209,12 @@ split_line_loop:
 	jne split_line_loop
 
 split_line_done:
-	mov rax,0
+	xor rax,rax
 totally:
 	ret
 
 unix_prompt:
-	mov rdi,0
+	xor rdi,rdi
 	call _getlogin
 	mov r12, rax
 
@@ -224,7 +223,7 @@ unix_prompt:
 	call _gethostname
 	mov r13, HOSTNAME_STR
 
-	mov rdi,0
+	xor rdi,rdi
 	call _getcwd
 	mov r14,rax
 	
